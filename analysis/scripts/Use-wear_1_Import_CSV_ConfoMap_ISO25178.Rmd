@@ -1,0 +1,239 @@
+---
+title: "Import CSV from ConfoMap ISO25178 - use-wear archaeology & experiments"
+author: "Lisa Schunk"
+date: "`r Sys.time()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: cerulean
+    highlight: pygments
+    number_sections: true
+  github_document: 
+    toc: true
+    toc_depth: 3
+    html_preview: false
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_format = "all", 
+  knit_root_dir = rprojroot::find_rstudio_root_file()) })
+---
+
+
+```{r Knitr Options, include=FALSE}
+knitr::opts_chunk$set(comment = NA, message = FALSE, indent = "", error = TRUE)
+```
+
+---
+
+
+# Goal of the script
+This script formats the output of the resulting Rbin-files from applying a template
+computing ISO25178 parameters in ConfoMap.
+The script will:
+
+1. Read in the original Rbin-files
+2. Format the data in oder to make the three data sets fitting  
+3. Write an XLSX-file and save an R object ready for further analysis in R 
+
+```{r}
+dir_in <- "analysis/raw_data"
+dir_out <- "analysis/derived_data/"
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+
+The knit directory for this script is the project directory.
+
+---
+
+
+# Load packages
+```{r}
+library(openxlsx)
+library(tools)
+library(R.utils)
+library(chron)
+library(tidyverse)
+```
+
+
+---
+
+
+# Get names, path and information of all files 
+```{r}
+data_files <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
+md5_in <- md5sum(data_files)
+info_in <- data.frame(files = basename(names(md5_in)), checksum = md5_in, 
+                      row.names = NULL)
+```
+
+The checksum (MD5 hashes) of the imported files are:  
+```{r, echo = FALSE}
+info_in
+```
+
+
+---
+
+
+# Read in original CSV-files
+```{r}
+AvsN_imp <- loadObject(data_files[1])
+str(AvsN_imp)
+TFE_imp <- loadObject(data_files[2])
+str(TFE_imp)
+Arch_imp <- loadObject(data_files[3])
+str(Arch_imp)
+
+```
+
+
+---
+
+# Add columns with further information 
+```{r}
+
+location <- substr(AvsN_imp["Location"][,1], 1, 1)
+sublocation <- substr(AvsN_imp["Location"][,1], 2, 2)
+
+AvsN_imp$Location = location
+AvsN_imp$Sublocation = sublocation
+
+
+location <- substr(TFE_imp["Location"][,1], 1, 1)
+sublocation <- substr(TFE_imp["Location"][,1], 2, 2)
+
+TFE_imp$Location = location
+TFE_imp$Sublocation = sublocation
+
+# adds the name of the experiment as "site"
+AvsN_imp[grep("LYDIT4-", AvsN_imp[["Sample"]]), "Site"] <- "aVSn"
+AvsN_imp[grep("FLT4-", AvsN_imp[["Sample"]]), "Site"] <- "aVSn"
+TFE_imp[grep("LYDIT5-", TFE_imp[["Sample"]]), "Site"] <- "TFE"
+TFE_imp[grep("FLT8-", TFE_imp[["Sample"]]), "Site"] <- "TFE"
+
+AvsN_imp[["Site"]] <- factor(AvsN_imp[["Site"]])
+TFE_imp[["Site"]] <- factor(TFE_imp[["Site"]])
+
+# adds the tool type 
+AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Tool.type"] <- "Standard sample"
+TFE_imp[grep("TFE", TFE_imp[["Site"]]), "Tool.type"] <- "Standard sample"
+
+AvsN_imp[["Tool.type"]] <- factor(AvsN_imp[["Tool.type"]])
+TFE_imp[["Tool.type"]] <- factor(TFE_imp[["Tool.type"]])
+
+# adds a column for "use-wear type" based on cycle
+AvsN_imp$Usewear.type <- AvsN_imp$Cycle
+TFE_imp$Usewear.type <- TFE_imp$Cycle
+
+# adds the contact material 
+Arch_imp[grep("lydite", Arch_imp[["Raw.material"]]), "Contact.material"] <- "unknown"
+Arch_imp[grep("flint", Arch_imp[["Raw.material"]]), "Contact.material"] <- "unknown"
+
+# adds the task 
+Arch_imp[grep("lydite", Arch_imp[["Raw.material"]]), "Task"] <- "unknown"
+Arch_imp[grep("flint", Arch_imp[["Raw.material"]]), "Task"] <- "unknown"
+AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Task"] <- "cutting"
+
+# adds the edge angle 
+Arch_imp[grep("lydite", Arch_imp[["Raw.material"]]), "Edge.angle"] <- "unknown"
+Arch_imp[grep("flint", Arch_imp[["Raw.material"]]), "Edge.angle"] <- "unknown"
+AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Edge.angle"] <- "60°"
+
+```
+
+# Keeps only interesting columns and orders them  
+```{r}
+# deletes non-important columns 
+AvsN_imp$Cycle <- NULL
+TFE_imp$Cycle <- NULL
+
+# orders the columns in an identical way
+AvsN_imp <- AvsN_imp[c(1, 56:57, 6, 2, 55, 3:4, 58, 7, 59:60, 5, 8:54)]
+TFE_imp <- TFE_imp[c(1, 58:59, 6, 2, 57, 3:4, 60,7:9, 5, 10:56)]
+Arch_imp <- Arch_imp[c(1:9, 58:60, 10:57)]
+
+```
+
+
+# Merge three datasets
+```{r}
+# check pairwisely if the three lines of headers are identical among the datasets
+# merges the data based on the three lines of headers while they get only 
+# used in the first file 
+
+comp <- all(sapply(list(colnames(AvsN_imp), colnames(TFE_imp)), 
+                   FUN = identical, colnames(Arch_imp)))
+if (comp == TRUE) {
+  merged_data <- full_join(AvsN_imp, TFE_imp) %>% full_join(Arch_imp)
+} else {
+  stop("The headers are not identical among the datasets")
+}
+str(merged_data)
+```
+
+
+---
+
+
+# Save data
+## Format name of output file
+```{r}
+file_out <- "Use-wear_all"
+```
+The files will be saved as "`r paste0("~/", file_out, ".[ext]")`".
+
+
+## Write to XLSX
+```{r}
+write.xlsx(list(data = merged_data), 
+           file = paste0(dir_out, file_out, ".xlsx"))
+```
+
+
+## Save R object
+```{r}
+saveObject(merged_data, file = paste0(dir_out, file_out, ".Rbin"))
+```
+
+
+## Show files information
+```{r}
+files_out <- c(paste0(dir_out, file_out, ".xlsx"), paste0(dir_out, file_out, ".Rbin"))
+md5_out <- md5sum(files_out)
+info_out <- data.frame(files = basename(names(md5_out)), checksum = md5_out, 
+                       row.names = NULL)
+```
+
+
+The checksum (MD5 hashes) of the exported files are:  
+```{r, echo = FALSE}
+info_out
+```
+
+
+---
+
+# sessionInfo() and RStudio version
+
+```{r}
+sessionInfo()
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+
+END OF SCRIPT
+
+
+
+
+
+
+

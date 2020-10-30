@@ -1,0 +1,357 @@
+---
+title: "Plots - use-wear archaeology & experiments"
+author: "Lisa Schunk"
+date: "`r Sys.time()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: cerulean
+    highlight: pygments
+    number_sections: true
+  github_document: 
+    toc: true
+    toc_depth: 3
+    html_preview: false
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_format = "all", 
+  knit_root_dir = rprojroot::find_rstudio_root_file()) })
+---
+
+```{r Knitr Options, include=FALSE}
+knitr::opts_chunk$set(comment=NA, message=FALSE, indent="", error=TRUE)
+````
+
+
+# Goal of the script
+This script plots all variables to see which ones should be used for further analysis.  
+Scatterplot of each variable will be plotted.   
+
+
+
+```{r}
+dir_in <- "analysis/derived_data/"
+dir_out <- "analysis/plots"
+```
+
+Raw data must be located in `r paste0("~/", dir_in)`.  
+Formatted data will be saved in `r paste0("~/", dir_out)`.
+The knit directory for this script is the project directory.
+
+---
+
+
+# Load packages
+```{r}
+library(R.utils)
+library(ggplot2)
+library(tools)
+library(tidyverse)
+library(patchwork)
+library(doBy)
+library(ggrepel)
+library(openxlsx)
+library(wesanderson)
+library(ggfortify)
+
+```
+
+
+---
+
+# Get name, path and information of the file 
+```{r}
+data_file <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
+md5_in <- md5sum(data_file)
+info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
+```
+
+
+The checksum (MD5 hashes) of the imported file is:  
+```{r, echo = FALSE}
+info_in
+```
+
+
+# Load data into R object
+```{r}
+imp_data <- loadObject(data_file)
+str(imp_data)
+```
+
+The imported file is: "`r paste0("~/", data_file)`"  
+
+---
+
+
+# Prepare variables
+## Define numeric variables
+```{r}
+num.var <- 27:length(imp_data)
+```
+
+The following variables will be used: 
+
+```{r, echo=FALSE}
+for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
+```
+
+---
+
+
+# Plot each of the selected numeric variables 
+## Boxplot of all the variables combined with the use-wear type 
+```{r}
+# plot
+for (i in num.var){
+  
+  p <- ggplot(data = imp_data, aes_string(x = "Usewear.type", y = names(imp_data)[i],
+                                           fill = "Tool.type")) +
+        geom_boxplot() +
+        theme_classic() +
+        labs( x = "Use-wear type", title = " ") +
+        labs(y = gsub("\\.", " ", names(imp_data)[i])) +
+        labs(fill = "Tool type") +
+        scale_fill_manual(values=wes_palette(n = 7, name = "Royal1", type = "continuous"))
+        
+  print(p)
+
+  # saves the plots 
+  file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_boxplot_", 
+	                   names(imp_data)[i], ".pdf")
+	ggsave(filename = file_out, plot = p2, path = dir_out, device = "pdf", width = 17,
+	       height = 25, units = "cm")
+      
+}  
+
+
+p <- ggplot(data = imp_data, aes_string(x = "Usewear.type", y = "Sq",
+                                           fill = "Tool.type")) +
+        geom_boxplot() +
+        theme_classic() +
+        labs( x = "Use-wear type", title = " ") +
+        #labs(y = gsub("\\.", " ", names(imp_data)[i])) +
+        labs(fill = "Tool type") +
+        ylim(0, 5000)+  
+        scale_fill_manual(values=wes_palette(n = 7, name = "Royal1", type = "continuous"))
+        
+  print(p)
+
+
+
+```
+
+
+## Boxplot of all the variables combined with the use-wear type - tool types separated
+```{r}
+# Keilmesser
+# sorts the data according to the technological class 
+sort_data <- imp_data[ , ] %>% arrange(Tool.type)
+# excludes all other tool types  
+KM_stand_data <- sort_data [1:195, ]
+# arranges the data so that before can be excluded
+KM_data <- KM_stand_data[ , ] %>% arrange(Usewear.type)
+KM_data <- KM_data [c(1:72,103:195),]
+
+
+
+for (i in num.var){
+  
+  KM <- ggplot(data = KM_data, aes_string(x = "Usewear.type", y = names(KM_data)[i],
+                                           fill = "Contact.material")) +
+        geom_boxplot() +
+        theme_classic() +
+        labs( x = "Use-wear type", title = " ") +
+        labs(y = gsub("\\.", " ", names(KM_data)[i])) +
+        labs(fill = "Contact material") +
+        #ylim(0,2)+
+        scale_fill_manual(values = wes_palette(n = 5, name = "Royal1",type = "continuous"))
+        
+  print(KM)
+
+  # saves the plots 
+  file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_standard_KM_boxplot", 
+	                   names(KM_data)[i], ".pdf")
+	ggsave(filename = file_out, plot = KM, path = dir_out, device = "pdf", width = 17,
+	       height = 25, units = "cm")
+      
+}  
+
+
+Sq <- ggplot(data = KM_data, aes_string(x = "Usewear.type", y ="Sq",
+                                           fill = "Contact.material")) +
+        geom_boxplot() +
+        theme_classic() +
+        labs( x = "Use-wear type", title = " ") +
+        #labs(y = gsub("\\.", " ", names(KM_data)[i])) +
+        labs(fill = "Contact material") +
+        ylim(0,5000)+
+        scale_fill_manual(values = wes_palette(n = 5, name = "Royal1",type = "continuous"))
+        
+  print(Sq)
+
+  # saves the plots 
+  file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_standard_KM_boxplot_SQ_limit", 
+	                   names(KM_data)[i], ".pdf")
+	ggsave(filename = file_out, plot = KM, path = dir_out, device = "pdf", width = 17,
+	       height = 25, units = "cm")
+      
+
+
+
+
+```
+
+
+## Scatterplots of selected variables combined with the use-wear type 
+```{r}
+# plot 
+# plots Sa against Sq
+p3 <- ggplot(data = imp_data) +  
+      geom_point(mapping = aes(x = Sa, y = Sq, colour = Usewear.type)) +
+      theme_classic() +
+      labs(colour = "Use-wear type") +
+      scale_colour_hue(h = c(25, 230)) 
+        
+print(p3)
+
+# saves the plot
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_SA_scatterplot_", ".pdf")
+ggsave(filename = file_out, plot = p3, path = dir_out, device = "pdf")
+
+ 
+# plots epLsar against Asfc 
+p4 <- ggplot(data = imp_data) +  
+      geom_point(mapping = aes(x = Asfc, y = epLsar, colour = Usewear.type)) +
+      theme_classic() +
+      labs(colour = "Use-wear type") +
+      scale_colour_hue(h = c(25, 230)) 
+        
+print(p4) 
+
+# saves the plot
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_Asfc_scatterplot_", ".pdf")
+ggsave(filename = file_out, plot = p4, path = dir_out, device = "pdf")
+
+  
+# plots Sq against Vmc 
+p5 <- ggplot(data = imp_data) +  
+      geom_point(mapping = aes(x = Sq, y = Vmc, colour = Usewear.type)) +
+      theme_classic() +
+      labs(colour = "Use-wear type") +
+      scale_colour_hue(h = c(25, 230)) 
+       
+print(p5)
+
+# saves the plot
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_Sq_scatterplot_", ".pdf")
+ggsave(filename = file_out, plot = p5, path = dir_out, device = "pdf")
+
+
+# plots Mean depth of furrows against mean density of furrows  
+p6 <- ggplot(data = imp_data) +  
+      geom_point(mapping = aes(x = Mean.depth.of.furrows, y = Mean.density.of.furrows,
+                               colour = Usewear.type)) +
+      theme_classic() +
+      labs(colour = "Use-wear type") +
+      scale_colour_hue(h = c(25, 230)) +
+      labs(x = "Mean depth of furrows", y = "Mean density of furrows")
+  
+print(p6)
+
+# saves the plot
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_furrows_scatterplot_", ".pdf")
+ggsave(filename = file_out, plot = p6, path = dir_out, device = "pdf")
+  
+
+
+```
+
+
+## Principal component analysis 
+```{r}
+imp_data.pca <- prcomp(imp_data[24:30], scale. = TRUE) 
+
+imp_data.pca$x
+pca <- cbind(imp_data[, 1:9], imp_data.pca$x)
+
+# Using ggfortigy
+a<- autoplot(imp_data.pca, data = pca, colour = "Usewear.type",
+         label = TRUE, label.size = 2,
+         loadings = TRUE, loadings.label = TRUE, loadings.label.size  = 3) # colour should be categorical
+
+print(a)
+
+# saves the plot
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_factor_analysis", ".pdf")
+ggsave(filename = file_out, plot = a, path = dir_out, device = "pdf")
+  
+
+# using ggplot
+# PCA use-wear type
+b <- ggplot(pca, aes(PC1, PC2, col = Tool.type, fill = Usewear.type)) +
+     stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
+     scale_fill_manual(values = wes_palette(n = 11, name = "Royal1", type = "continuous")) + 
+     geom_point(shape = 21, col = "black") +
+     labs(fill = "Use-wear type") +
+     theme_classic()
+
+print(b)
+
+# saves the plot
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_PCA_Usewear", ".pdf")
+ggsave(filename = file_out, plot = b, path = dir_out, device = "pdf")
+
+# PCA tool type 
+c <- ggplot(pca, aes(PC1, PC2, col = Tool.type, fill = Tool.type)) +
+          stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
+          scale_fill_manual(values = wes_palette(n = 4, name = "FantasticFox1")) +
+          geom_point(shape = 21, col = "black") +
+          labs(fill = "Tool type") +
+          theme_classic()
+
+print(c)
+
+# saves the plot
+file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_PCA_Tool_type", ".pdf")
+ggsave(filename = file_out, plot = c, path = dir_out, device = "pdf")
+
+
+```
+
+
+The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
+
+---
+
+
+# Show plot files information
+```{r}
+info_out <- list.files(path = dir_out, pattern = "\\.pdf$", 
+                       full.names = TRUE) %>% 
+            md5sum()
+```
+
+
+The checksum (MD5 hashes) of the exported files are:  
+```{r, echo = FALSE}
+info_out
+```
+
+
+
+---
+
+# sessionInfo() and RStudio version
+```{r}
+sessionInfo()
+```
+
+RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+---
+
+END OF SCRIPT
+
