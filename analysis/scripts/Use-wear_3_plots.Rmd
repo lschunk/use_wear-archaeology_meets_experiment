@@ -105,7 +105,7 @@ for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
 ```{r}
 
 arch <- filter(imp_data, Site == "Balve" | Site == "Buhlen" | Site == "Ramioul") 
-exp <- filter(imp_data, Site == "aVSn" | Site == "TFE" | Usewear.type == "2000")
+exp <- filter(imp_data, Site == "aVSn" | Site == "TFE")
 
 # converts the data into factor 
 arch[["Tool.type"]] <- factor(arch[["Tool.type"]])
@@ -122,15 +122,17 @@ custom.col6 <- data.frame(type = levels(exp$Tool.typ), col = "#F98400")
 exp$col <- custom.col6[exp$Tool.typ %in% levels(exp[["Tool.type"]]), "col"]
 
 
-# gets the min/max range of the data set
-range_var <- range(exp[[i]]) 
 
 # plot tool type 
 for (i in num.var){
   
+  # gets the min/max range of the data set
+range_var <- range(imp_data[[i]]) 
+
+  
   p_arch <- ggplot(data = arch, aes_string(x = "Usewear.type", y = names(imp_data)[i],
                                            fill = "Tool.type")) +
-        geom_boxplot() +
+        geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
         theme_classic() +
         coord_cartesian(ylim = range_var) + 
         labs( x = "Use-wear type", title = " ") +
@@ -141,7 +143,7 @@ for (i in num.var){
   
   p_exp <- ggplot(data = exp, aes_string(x = "Usewear.type", y = names(imp_data)[i],
                                            fill = "Tool.type")) +
-        geom_boxplot() +
+        geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
         theme_classic() +
         coord_cartesian(ylim = range_var) + 
         labs( x = "Use-wear type", title = " ") +
@@ -151,78 +153,19 @@ for (i in num.var){
   
 
   # combines the plots 
-  p <- p_arch + p_exp + plot_layout(guides = 'collect')
+  p <- p_arch + p_exp + plot_layout(width = c(4, 1), guides = 'collect')
  
   print(p)
    
   # saves the plots 
   file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_boxplot_arch.exp_", 
 	                   names(imp_data)[i], ".pdf")
-	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf")
+	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf", width = 250, height = 170, units = "mm")
       
 }  
 
 ```
 
-
-
-## Boxplot of all the variables combined with the tool type 
-```{r}
-# converts the data into factor 
-arch[["Usewear.type"]] <- factor(arch[["Usewear.type"]])
-exp[["Usewear.type"]] <- factor(exp[["Usewear.type"]])
-
-# colours archaeological data
-custom.col1 <- data.frame(type = levels(arch$Usewear.typ), 
-                         col = c("#999999", "#52854c", "#c3d7a4", "#487bb6", "#9a0f0f", "#fdbf6f",
-                                 "#d16103", "#ffdb6d", "#985633", "#134680", "#05100c")) 
-arch$col1 <- custom.col1[arch$Usewear.typ, "col"]
-
-# colours experimental data 
-# Darjeeling1 = c("#FF0000", "#00A08A", "#F2AD00", "#F98400", "#5BBCD6")
-custom.col7 <- data.frame(type = levels(exp$Usewear.typ), col = c("#FF0000", "#F2AD00")) 
-exp$col7 <- custom.col7[exp$Usewear.typ, "col"]
-
-# plot tool type 
-for (i in num.var){
-  
-  p_arch2 <- ggplot(data = arch, aes_string(x = "Tool.type", y = names(imp_data)[i],
-                                           fill = "Usewear.type")) +
-        geom_boxplot() +
-        theme_classic() +
-        #coord_cartesian(ylim = range_var) + 
-        labs( x = "Tool type", title = " ") +
-        labs(y = gsub("\\.", " ", names(imp_data)[i])) +
-        labs(fill = "Usewear type") + 
-        scale_fill_manual(values = arch$col1)
-        
-  print(p_arch2)
-  
-  p_exp2 <- ggplot(data = exp, aes_string(x = "Tool.type", y = names(imp_data)[i],
-                                           fill = "Usewear.type")) +
-        geom_boxplot() +
-        theme_classic() +
-        #coord_cartesian(ylim = range_var) + 
-        labs( x = "Tool type", title = " ") +
-        labs(y = gsub("\\.", " ", names(imp_data)[i])) +
-        labs(fill = "Use-wear type") + 
-        scale_fill_manual(values = exp$col7)
-  
-   print(p_exp2)
-  # combines the plots 
-  p2 <- p_arch2 + p_exp2 + plot_layout(guides = 'collect')
- 
-  print(p2)
-   
-  # saves the plots 
-  file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_boxplot_arch.exp_", 
-	                   names(imp_data)[i], ".pdf")
-	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf")
-      
-}  
-
-
-```
 
 
 ## Principal component analysis 
@@ -256,6 +199,43 @@ file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_PCA_all.data", ".pdf
 ggsave(filename = file_out, plot = PCA, path = dir_out, device = "pdf")
   
 ```
+
+
+## (facet plot = 1 plot for flint, 1 plot for lydite)
+```{r}
+# selects only the data from after 2000 strokes on the bone plate (experimental data) 
+exp2000 <- filter(exp, Usewear.type == "2000" & Contact.material == "bone plate")
+
+for (i in num.var){
+  #plot
+  range_var <- range(exp2000[[i]]) # gets the min/max range of the data set 
+  
+	p <- ggplot(data = exp2000, aes_string(x="Task", y = names(exp2000)[i], colour="Edge.angle")) + 
+	     # avoids overplotting
+	     scale_color_manual(values=c("#446455","#999999", "#E69F00")) +
+	     geom_jitter(size = 3,  position = position_jitter(width = 0.35, seed = 1)) + 
+	     coord_cartesian(ylim = range_var) + 
+	     theme_classic() + 
+	     # removes the "." between "Edge.angle" in the legend 
+	     labs(colour = gsub("\\.", " ", "Edge.angle")) + 
+	     # removes the "." between the variable names
+	     labs(y = gsub("\\.", " ", names(exp2000)[i])) + 
+       # combines the flint and the lydite plot into one   
+	     facet_wrap(~Raw.material) 
+	     
+	
+	print(p)
+
+
+	#save to PDF
+	file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_exp_2000_plot_", 
+	                   names(imp_data)[i], ".pdf")
+	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf")
+}
+
+
+```
+
 
 
 The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
