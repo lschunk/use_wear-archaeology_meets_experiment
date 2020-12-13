@@ -101,11 +101,16 @@ for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
 
 
 # Plot each of the selected numeric variables 
-## Boxplot of all the variables combined with the tool type 
+## Boxplot of all the variables combined with the tool type (without outliers) 
 ```{r}
+# excludes the outliers 
+# adds the indices as row numbers 
+imp_data <- imp_data %>% mutate(id = row_number())
+imp_data2 <- imp_data[-c(19, 20, 55, 59, 62, 70), ]
 
-arch <- filter(imp_data, Site == "Balve" | Site == "Buhlen" | Site == "Ramioul") 
-exp <- filter(imp_data, Site == "aVSn" | Site == "TFE")
+
+arch <- filter(imp_data2, Site == "Balve" | Site == "Buhlen" | Site == "Ramioul") 
+exp <- filter(imp_data2, Site == "aVSn" | Site == "TFE")
 
 # converts the data into factor 
 arch[["Tool.type"]] <- factor(arch[["Tool.type"]])
@@ -121,13 +126,15 @@ arch$col <- custom.col2[arch$Tool.typ %in% levels(arch[["Tool.type"]]), "col"]
 custom.col6 <- data.frame(type = levels(exp$Tool.typ), col = "#F98400") 
 exp$col <- custom.col6[exp$Tool.typ %in% levels(exp[["Tool.type"]]), "col"]
 
+# gets new order 
+exp$Usewear.type <- factor(exp$Usewear.type, levels=c("before", "2000"))
 
 
 # plot tool type 
 for (i in num.var){
   
   # gets the min/max range of the data set
-range_var <- range(imp_data[[i]]) 
+range_var <- range(imp_data2[[i]]) 
 
   
   p_arch <- ggplot(data = arch, aes_string(x = "Usewear.type", y = names(imp_data)[i],
@@ -171,7 +178,7 @@ range_var <- range(imp_data[[i]])
 ## Principal component analysis 
 ```{r}
 # removes rows with na values 
-data_pca <- na.omit(imp_data)
+data_pca <- na.omit(imp_data2)
 # uses for the PCA only selected variables: Sq, SSK, Vmc, Isotropy, Mean density of furrows, Asfc, HAsfc9 
 imp_data.pca <- prcomp(data_pca[, c(27:28, 45, 50, 54, 57, 59)], scale. = TRUE) 
 # converts the data into factor 
@@ -212,7 +219,7 @@ for (i in num.var){
   
 	p <- ggplot(data = exp2000, aes_string(x="Task", y = names(exp2000)[i], colour="Edge.angle")) + 
 	     # avoids overplotting
-	     scale_color_manual(values=c("#446455","#999999", "#E69F00")) +
+	     scale_color_manual(values=c("#046C9A","#FAD510", "#CB2314")) +
 	     geom_jitter(size = 3,  position = position_jitter(width = 0.35, seed = 1)) + 
 	     coord_cartesian(ylim = range_var) + 
 	     theme_classic() + 
