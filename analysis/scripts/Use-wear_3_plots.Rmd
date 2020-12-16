@@ -175,8 +175,9 @@ range_var <- range(imp_data2[[i]])
 
 
 
-## Principal component analysis 
+## Principal component analysis (without outliers)
 ```{r}
+# PCA use-wear types
 # removes rows with na values 
 data_pca <- na.omit(imp_data2)
 # uses for the PCA only selected variables: Sq, SSK, Vmc, Isotropy, Mean density of furrows, Asfc, HAsfc9 
@@ -185,10 +186,10 @@ imp_data.pca <- prcomp(data_pca[, c(27:28, 45, 50, 54, 57, 59)], scale. = TRUE)
 data_pca[["Usewear.type"]] <- factor(data_pca[["Usewear.type"]])
 
 
-custom.col <- data.frame(type = levels(data_pca$Usewear.typ), 
+custom.col1 <- data.frame(type = levels(data_pca$Usewear.typ), 
                          col = c("#FD6467", "#999999", "#52854c", "#c3d7a4", "#00A08A", "#487bb6", "#9a0f0f", "#fdbf6f",
                                  "#d16103", "#ffdb6d", "#985633", "#134680", "#05100c")) 
-data_pca$col <- custom.col[data_pca$Usewear.typ, "col"]
+data_pca$col <- custom.col1[data_pca$Usewear.typ, "col"]
 
 
 # Using ggfortify
@@ -204,7 +205,8 @@ print(PCA)
 # saves the plot
 file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_PCA_all.data", ".pdf")
 ggsave(filename = file_out, plot = PCA, path = dir_out, device = "pdf")
-  
+
+
 ```
 
 
