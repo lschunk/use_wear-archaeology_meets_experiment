@@ -2,43 +2,30 @@
 title: "Import CSV from ConfoMap ISO25178 - use-wear archaeology & experiments"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
-output:
-  html_document:
-    toc: true
-    toc_depth: 3
-    toc_float: true
-    theme: cerulean
-    highlight: pygments
-    number_sections: true
-  github_document: 
-    toc: true
-    toc_depth: 3
-    html_preview: false
-knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding, output_format = "all", 
-  knit_root_dir = rprojroot::find_rstudio_root_file()) })
 ---
 
 
 ```{r Knitr Options, include=FALSE}
 knitr::opts_chunk$set(comment = NA, message = FALSE, indent = "", error = TRUE)
+
 ```
 
 ---
 
 
 # Goal of the script
-This script formats the output of the resulting Rbin-files from applying a template
+This script formats the output resulting from applying a template
 computing ISO25178 parameters in ConfoMap.
 The script will:
 
 1. Read in the original Rbin-files
-2. Format the data in oder to make the three data sets fitting  
+2. Format the data in order to make the three data sets fitting  
 3. Write an XLSX-file and save an R object ready for further analysis in R 
 
 ```{r}
 dir_in <- "analysis/raw_data"
 dir_out <- "analysis/derived_data/"
+
 ```
 
 Raw data must be located in `r paste0("~/", dir_in)`.  
@@ -56,6 +43,7 @@ library(tools)
 library(R.utils)
 library(chron)
 library(tidyverse)
+
 ```
 
 
@@ -68,11 +56,13 @@ data_files <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
 md5_in <- md5sum(data_files)
 info_in <- data.frame(files = basename(names(md5_in)), checksum = md5_in, 
                       row.names = NULL)
+
 ```
 
 The checksum (MD5 hashes) of the imported files are:  
 ```{r, echo = FALSE}
 info_in
+
 ```
 
 
@@ -81,6 +71,7 @@ info_in
 
 # Read in original CSV-files
 ```{r}
+# data from 'aVSn' experiment, tool function experiment and archaeology 
 AvsN_imp <- loadObject(data_files[1])
 str(AvsN_imp)
 TFE_imp <- loadObject(data_files[2])
@@ -161,7 +152,7 @@ Arch_imp <- Arch_imp[c(1:9, 58:60, 10:57)]
 
 # Merge three datasets
 ```{r}
-# check pairwisely if the three lines of headers are identical among the datasets
+# check pairwise if the three lines of headers are identical among the datasets
 # merges the data based on the three lines of headers while they get only 
 # used in the first file 
 
@@ -173,6 +164,7 @@ if (comp == TRUE) {
   stop("The headers are not identical among the datasets")
 }
 str(merged_data)
+
 ```
 
 
@@ -183,6 +175,7 @@ str(merged_data)
 ## Format name of output file
 ```{r}
 file_out <- "Use-wear_all"
+
 ```
 The files will be saved as "`r paste0("~/", file_out, ".[ext]")`".
 
@@ -191,36 +184,22 @@ The files will be saved as "`r paste0("~/", file_out, ".[ext]")`".
 ```{r}
 write.xlsx(list(data = merged_data), 
            file = paste0(dir_out, file_out, ".xlsx"))
+
 ```
 
 
 ## Save R object
 ```{r}
 saveObject(merged_data, file = paste0(dir_out, file_out, ".Rbin"))
+
 ```
-
-
-## Show files information
-```{r}
-files_out <- c(paste0(dir_out, file_out, ".xlsx"), paste0(dir_out, file_out, ".Rbin"))
-md5_out <- md5sum(files_out)
-info_out <- data.frame(files = basename(names(md5_out)), checksum = md5_out, 
-                       row.names = NULL)
-```
-
-
-The checksum (MD5 hashes) of the exported files are:  
-```{r, echo = FALSE}
-info_out
-```
-
 
 ---
 
 # sessionInfo() and RStudio version
-
 ```{r}
 sessionInfo()
+
 ```
 
 RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.

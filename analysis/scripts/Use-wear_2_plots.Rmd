@@ -2,37 +2,23 @@
 title: "Plots - use-wear archaeology & experiments"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
-output:
-  html_document:
-    toc: true
-    toc_depth: 3
-    toc_float: true
-    theme: cerulean
-    highlight: pygments
-    number_sections: true
-  github_document: 
-    toc: true
-    toc_depth: 3
-    html_preview: false
-knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding, output_format = "all", 
-  knit_root_dir = rprojroot::find_rstudio_root_file()) })
+output: word_document
 ---
 
 ```{r Knitr Options, include=FALSE}
 knitr::opts_chunk$set(comment=NA, message=FALSE, indent="", error=TRUE)
-````
+
+```
 
 
 # Goal of the script
-This script plots all variables to see which ones should be used for further analysis.  
-Scatterplot of each variable will be plotted.   
-
+This script combines the results from the quantitative use-wear analysis performed on archaeological samples as well as on standard samples used during two experiments (aVSn and TFE)
 
 
 ```{r}
 dir_in <- "analysis/derived_data/"
 dir_out <- "analysis/plots"
+
 ```
 
 Raw data must be located in `r paste0("~/", dir_in)`.  
@@ -65,12 +51,14 @@ library(ggfortify)
 data_file <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
 md5_in <- md5sum(data_file)
 info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
+
 ```
 
 
 The checksum (MD5 hashes) of the imported file is:  
 ```{r, echo = FALSE}
 info_in
+
 ```
 
 
@@ -78,6 +66,7 @@ info_in
 ```{r}
 imp_data <- loadObject(data_file)
 str(imp_data)
+
 ```
 
 The imported file is: "`r paste0("~/", data_file)`"  
@@ -89,24 +78,26 @@ The imported file is: "`r paste0("~/", data_file)`"
 ## Define numeric variables
 ```{r}
 num.var <- 27:length(imp_data)
+
 ```
 
 The following variables will be used: 
 
 ```{r, echo=FALSE}
 for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
+
 ```
 
 ---
 
 
 # Plot each of the selected numeric variables 
-## Boxplot of all the variables combined with the tool type (without outliers) 
+## Boxplot of all the variables combined with the artefact category (without outliers) 
 ```{r}
-# excludes the outliers 
+# excludes the outliers (from both data sets)
 # adds the indices as row numbers 
 imp_data <- imp_data %>% mutate(id = row_number())
-imp_data2 <- imp_data[-c(19, 20, 55, 59, 62, 70), ]
+imp_data2 <- imp_data[-c(19, 20, 55, 59, 62, 70, 139, 147, 199, 200), ]
 
 
 arch <- filter(imp_data2, Site == "Balve" | Site == "Buhlen" | Site == "Ramioul") 
@@ -118,7 +109,7 @@ exp[["Tool.type"]] <- factor(exp[["Tool.type"]])
 
 # colours archaeological data
 custom.col2 <- data.frame(type = levels(arch$Tool.typ), 
-                         col = c( "#0B775E", "#E1BD6D", "#35274A" ,"#F2300F")) 
+                         col = c( "#0B775E", "#E1BD6D", "#F2300F", "#35274A")) 
 arch$col <- custom.col2[arch$Tool.typ %in% levels(arch[["Tool.type"]]), "col"]
 
 # colours experimental data 
@@ -142,9 +133,9 @@ range_var <- range(imp_data2[[i]])
         geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
         theme_classic() +
         coord_cartesian(ylim = range_var) + 
-        labs( x = "Use-wear type", title = " ") +
+        labs( x = "use-wear type", title = " ") +
         labs(y = gsub("\\.", " ", names(imp_data)[i])) +
-        labs(fill = "Tool type") + 
+        labs(fill = "artefact category") + 
         scale_fill_manual(values = arch$col)
         
   
@@ -153,9 +144,9 @@ range_var <- range(imp_data2[[i]])
         geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
         theme_classic() +
         coord_cartesian(ylim = range_var) + 
-        labs( x = "Use-wear type", title = " ") +
+        labs( x = "use-wear type", title = " ") +
         labs(y = gsub("\\.", " ", names(imp_data)[i])) +
-        labs(fill = "Tool type") + 
+        labs(fill = "artefact category") + 
         scale_fill_manual(values = exp$col)
   
 
@@ -177,6 +168,7 @@ range_var <- range(imp_data2[[i]])
 
 ## Principal component analysis (without outliers)
 ```{r}
+
 # PCA use-wear types
 # removes rows with na values 
 data_pca <- na.omit(imp_data2)
@@ -198,7 +190,7 @@ PCA<- autoplot(imp_data.pca, data = data_pca, colour = "Usewear.type", size = 2,
              loadings.label.size  = 4, loadings.label.repel = TRUE,  
              frame = TRUE, frame.type = "convex", frame.colour = "Usewear.type", frame.alpha = 0) + 
              theme_classic() +
-             scale_colour_manual(values = custom.col$col)
+             scale_colour_manual(values = custom.col1$col)
          
 print(PCA)
 
@@ -245,29 +237,11 @@ for (i in num.var){
 
 ```
 
-
-
 The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
 
 ---
 
 
-# Show plot files information
-```{r}
-info_out <- list.files(path = dir_out, pattern = "\\.pdf$", 
-                       full.names = TRUE) %>% 
-            md5sum()
-```
-
-
-The checksum (MD5 hashes) of the exported files are:  
-```{r, echo = FALSE}
-info_out
-```
-
-
-
----
 
 # sessionInfo() and RStudio version
 ```{r}
