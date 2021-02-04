@@ -2,6 +2,7 @@
 title: "Import CSV from ConfoMap ISO25178 - use-wear archaeology & experiments"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
+output: word_document
 ---
 
 
@@ -14,8 +15,7 @@ knitr::opts_chunk$set(comment = NA, message = FALSE, indent = "", error = TRUE)
 
 
 # Goal of the script
-This script formats the output resulting from applying a template
-computing ISO25178 parameters in ConfoMap.
+This script formats the output resulting from applying a template computing ISO 25178 parameters in ConfoMap.
 The script will:
 
 1. Read in the original Rbin-files
@@ -55,7 +55,7 @@ library(tidyverse)
 data_files <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
 md5_in <- md5sum(data_files)
 info_in <- data.frame(files = basename(names(md5_in)), checksum = md5_in, 
-                      row.names = NULL)
+                  row.names = NULL)
 
 ```
 
@@ -136,6 +136,7 @@ AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Edge.angle"] <- "60°"
 
 ```
 
+
 # Keeps only interesting columns and orders them  
 ```{r}
 # deletes non-important columns 
@@ -150,7 +151,7 @@ Arch_imp <- Arch_imp[c(1:9, 58:60, 10:57)]
 ```
 
 
-# Merge three datasets
+# Merges the three datasets
 ```{r}
 # check pairwise if the three lines of headers are identical among the datasets
 # merges the data based on the three lines of headers while they get only 

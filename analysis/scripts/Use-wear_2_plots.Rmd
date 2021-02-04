@@ -129,25 +129,25 @@ range_var <- range(imp_data2[[i]])
 
   
   p_arch <- ggplot(data = arch, aes_string(x = "Usewear.type", y = names(imp_data)[i],
-                                           fill = "Tool.type")) +
-        geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
-        theme_classic() +
-        coord_cartesian(ylim = range_var) + 
-        labs( x = "use-wear type", title = " ") +
-        labs(y = gsub("\\.", " ", names(imp_data)[i])) +
-        labs(fill = "artefact category") + 
-        scale_fill_manual(values = arch$col)
+                                        fill = "Tool.type")) +
+            geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
+            theme_classic() +
+            coord_cartesian(ylim = range_var) + 
+            labs( x = "use-wear type", title = " ") +
+            labs(y = gsub("\\.", " ", names(imp_data)[i])) +
+            labs(fill = "artefact category") + 
+            scale_fill_manual(values = arch$col)
         
   
   p_exp <- ggplot(data = exp, aes_string(x = "Usewear.type", y = names(imp_data)[i],
-                                           fill = "Tool.type")) +
-        geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
-        theme_classic() +
-        coord_cartesian(ylim = range_var) + 
-        labs( x = "use-wear type", title = " ") +
-        labs(y = gsub("\\.", " ", names(imp_data)[i])) +
-        labs(fill = "artefact category") + 
-        scale_fill_manual(values = exp$col)
+                                      fill = "Tool.type")) +
+           geom_boxplot(outlier.size = 0.7, lwd = 0.2) +
+           theme_classic() +
+           coord_cartesian(ylim = range_var) + 
+           labs( x = "use-wear type", title = " ") +
+           labs(y = gsub("\\.", " ", names(imp_data)[i])) +
+           labs(fill = "artefact category") + 
+           scale_fill_manual(values = exp$col)
   
 
   # combines the plots 
@@ -158,7 +158,8 @@ range_var <- range(imp_data2[[i]])
   # saves the plots 
   file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_boxplot_arch.exp_", 
 	                   names(imp_data)[i], ".pdf")
-	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf", width = 250, height = 170, units = "mm")
+	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf", 
+	         width = 250, height = 170, units = "mm")
       
 }  
 
@@ -172,32 +173,33 @@ range_var <- range(imp_data2[[i]])
 # PCA use-wear types
 # removes rows with na values 
 data_pca <- na.omit(imp_data2)
-# uses for the PCA only selected variables: Sq, SSK, Vmc, Isotropy, Mean density of furrows, Asfc, HAsfc9 
+# uses for the PCA only selected variables: Sq, SSK, Vmc, Isotropy, Mean density of furrows,  Asfc, HAsfc9 
 imp_data.pca <- prcomp(data_pca[, c(27:28, 45, 50, 54, 57, 59)], scale. = TRUE) 
 # converts the data into factor 
 data_pca[["Usewear.type"]] <- factor(data_pca[["Usewear.type"]])
 
 
 custom.col1 <- data.frame(type = levels(data_pca$Usewear.typ), 
-                         col = c("#FD6467", "#999999", "#52854c", "#c3d7a4", "#00A08A", "#487bb6", "#9a0f0f", "#fdbf6f",
-                                 "#d16103", "#ffdb6d", "#985633", "#134680", "#05100c")) 
+                           col = c("#FD6467", "#999999", "#52854c", "#c3d7a4", "#00A08A",
+                                   "#487bb6", "#9a0f0f", "#fdbf6f", "#d16103", "#ffdb6d",
+                                   "#985633", "#134680", "#05100c")) 
 data_pca$col <- custom.col1[data_pca$Usewear.typ, "col"]
 
 
 # Using ggfortify
 PCA<- autoplot(imp_data.pca, data = data_pca, colour = "Usewear.type", size = 2,
-             loadings = TRUE, loadings.colour = "black", loadings.label = TRUE, loadings.label.colour = "black", 
-             loadings.label.size  = 4, loadings.label.repel = TRUE,  
-             frame = TRUE, frame.type = "convex", frame.colour = "Usewear.type", frame.alpha = 0) + 
-             theme_classic() +
-             scale_colour_manual(values = custom.col1$col)
+                         loadings = TRUE, loadings.colour = "black", loadings.label = TRUE,                          loadings.label.colour = "black", 
+                         loadings.label.size  = 4, loadings.label.repel = TRUE,  
+                         frame = TRUE, frame.type = "convex", frame.colour = "Usewear.type",
+                         frame.alpha = 0) + 
+       theme_classic() +
+       scale_colour_manual(values = custom.col1$col)
          
 print(PCA)
 
 # saves the plot
 file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_PCA_all.data", ".pdf")
 ggsave(filename = file_out, plot = PCA, path = dir_out, device = "pdf")
-
 
 ```
 
@@ -211,7 +213,8 @@ for (i in num.var){
   #plot
   range_var <- range(exp2000[[i]]) # gets the min/max range of the data set 
   
-	p <- ggplot(data = exp2000, aes_string(x="Task", y = names(exp2000)[i], colour="Edge.angle")) + 
+	p <- ggplot(data = exp2000, aes_string(x = "Task", y = names(exp2000)[i],
+	          colour = "Edge.angle")) + 
 	     # avoids overplotting
 	     scale_color_manual(values=c("#046C9A","#FAD510", "#CB2314")) +
 	     geom_jitter(size = 3,  position = position_jitter(width = 0.35, seed = 1)) + 
@@ -234,7 +237,6 @@ for (i in num.var){
 	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf")
 }
 
-
 ```
 
 The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
@@ -242,10 +244,10 @@ The files will be saved as "`r paste0("~/", dir_out, ".[ext]")`".
 ---
 
 
-
 # sessionInfo() and RStudio version
 ```{r}
 sessionInfo()
+
 ```
 
 RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
