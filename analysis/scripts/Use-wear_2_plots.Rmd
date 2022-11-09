@@ -2,7 +2,13 @@
 title: "Plots - use-wear archaeology & experiments"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
-output: word_document
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
 ---
 
 ```{r Knitr Options, include=FALSE}
@@ -27,19 +33,10 @@ The knit directory for this script is the project directory.
 
 ---
 
-
 # Load packages
-```{r}
-library(R.utils)
-library(ggplot2)
-library(tools)
-library(tidyverse)
-library(patchwork)
-library(doBy)
-library(ggrepel)
-library(openxlsx)
-library(wesanderson)
-library(ggfortify)
+```{r Libraries}
+pack_to_load <- c("tools", "openxlsx", "ggplot2", "doBy", "R.utils", "tidyverse", "patchwork", "ggrepel", "ggfortify")
+sapply(pack_to_load, library, character.only = TRUE, logical.return = TRUE)
 
 ```
 
@@ -51,13 +48,6 @@ library(ggfortify)
 data_file <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
 md5_in <- md5sum(data_file)
 info_in <- data.frame(file = basename(names(md5_in)), checksum = md5_in, row.names = NULL)
-
-```
-
-
-The checksum (MD5 hashes) of the imported file is:  
-```{r, echo = FALSE}
-info_in
 
 ```
 
@@ -94,8 +84,8 @@ for (i in num.var) cat("[",i,"] ", names(imp_data)[i], "\n", sep="")
 # Plot each of the selected numeric variables 
 ## Boxplot of all the variables combined with the artefact category (without outliers) 
 ```{r}
-# excludes the outliers (from both data sets)
-# adds the indices as row numbers 
+# exclude the outliers (from both data sets)
+# add the indices as row numbers 
 imp_data <- imp_data %>% mutate(id = row_number())
 imp_data2 <- imp_data[-c(19, 20, 55, 59, 62, 70, 139, 147, 199, 200), ]
 
@@ -103,7 +93,7 @@ imp_data2 <- imp_data[-c(19, 20, 55, 59, 62, 70, 139, 147, 199, 200), ]
 arch <- filter(imp_data2, Site == "Balve" | Site == "Buhlen" | Site == "Ramioul") 
 exp <- filter(imp_data2, Site == "aVSn" | Site == "TFE")
 
-# converts the data into factor 
+# convert the data into factor 
 arch[["Tool.type"]] <- factor(arch[["Tool.type"]])
 exp[["Tool.type"]] <- factor(exp[["Tool.type"]])
 
@@ -117,14 +107,14 @@ arch$col <- custom.col2[arch$Tool.typ %in% levels(arch[["Tool.type"]]), "col"]
 custom.col6 <- data.frame(type = levels(exp$Tool.typ), col = "#F98400") 
 exp$col <- custom.col6[exp$Tool.typ %in% levels(exp[["Tool.type"]]), "col"]
 
-# gets new order 
+# get new order 
 exp$Usewear.type <- factor(exp$Usewear.type, levels=c("before", "2000"))
 
 
 # plot tool type 
 for (i in num.var){
   
-  # gets the min/max range of the data set
+  # get the min/max range of the data set
 range_var <- range(imp_data2[[i]]) 
 
   
@@ -150,12 +140,10 @@ range_var <- range(imp_data2[[i]])
            scale_fill_manual(values = exp$col)
   
 
-  # combines the plots 
+  # combine the plots 
   p <- p_arch + p_exp + plot_layout(width = c(4, 1), guides = 'collect')
  
-  print(p)
-   
-  # saves the plots 
+   # save the plots 
   file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_boxplot_arch.exp_", 
 	                   names(imp_data)[i], ".pdf")
 	ggsave(filename = file_out, plot = p, path = dir_out, device = "pdf", 
@@ -166,16 +154,16 @@ range_var <- range(imp_data2[[i]])
 ```
 
 
-
 ## Principal component analysis (without outliers)
 ```{r}
 
 # PCA use-wear types
-# removes rows with na values 
+# remove rows with na values 
 data_pca <- na.omit(imp_data2)
-# uses for the PCA only selected variables: Sq, SSK, Vmc, Isotropy, Mean density of furrows,  Asfc, HAsfc9 
+# use for the PCA only selected variables: Sq, SSK, Vmc, Isotropy, Mean density of 
+# furrows,  Asfc, HAsfc9 
 imp_data.pca <- prcomp(data_pca[, c(27:28, 45, 50, 54, 57, 59)], scale. = TRUE) 
-# converts the data into factor 
+# convert the data into factor 
 data_pca[["Usewear.type"]] <- factor(data_pca[["Usewear.type"]])
 
 
@@ -186,7 +174,7 @@ custom.col1 <- data.frame(type = levels(data_pca$Usewear.typ),
 data_pca$col <- custom.col1[data_pca$Usewear.typ, "col"]
 
 
-# Using ggfortify
+# using ggfortify
 PCA<- autoplot(imp_data.pca, data = data_pca, colour = "Usewear.type", size = 2,
                          loadings = TRUE, loadings.colour = "black", loadings.label = TRUE,                          loadings.label.colour = "black", 
                          loadings.label.size  = 4, loadings.label.repel = TRUE,  
@@ -194,10 +182,8 @@ PCA<- autoplot(imp_data.pca, data = data_pca, colour = "Usewear.type", size = 2,
                          frame.alpha = 0) + 
        theme_classic() +
        scale_colour_manual(values = custom.col1$col)
-         
-print(PCA)
 
-# saves the plot
+# save the plot
 file_out <- paste0(file_path_sans_ext(info_in[["file"]]), "_PCA_all.data", ".pdf")
 ggsave(filename = file_out, plot = PCA, path = dir_out, device = "pdf")
 
@@ -206,29 +192,26 @@ ggsave(filename = file_out, plot = PCA, path = dir_out, device = "pdf")
 
 ## (facet plot = 1 plot for flint, 1 plot for lydite)
 ```{r}
-# selects only the data from after 2000 strokes on the bone plate (experimental data) 
+# select only the data from after 2000 strokes on the bone plate (experimental data) 
 exp2000 <- filter(exp, Usewear.type == "2000" & Contact.material == "bone plate")
 
 for (i in num.var){
-  #plot
-  range_var <- range(exp2000[[i]]) # gets the min/max range of the data set 
+  # plot
+  range_var <- range(exp2000[[i]]) # get the min/max range of the data set 
   
 	p <- ggplot(data = exp2000, aes_string(x = "Task", y = names(exp2000)[i],
 	          colour = "Edge.angle")) + 
-	     # avoids overplotting
+	     # avoid overplotting
 	     scale_color_manual(values=c("#046C9A","#FAD510", "#CB2314")) +
 	     geom_jitter(size = 3,  position = position_jitter(width = 0.35, seed = 1)) + 
 	     coord_cartesian(ylim = range_var) + 
 	     theme_classic() + 
-	     # removes the "." between "Edge.angle" in the legend 
+	     # remove the "." between "Edge.angle" in the legend 
 	     labs(colour = gsub("\\.", " ", "Edge.angle")) + 
-	     # removes the "." between the variable names
+	     # remove the "." between the variable names
 	     labs(y = gsub("\\.", " ", names(exp2000)[i])) + 
-       # combines the flint and the lydite plot into one   
+       # combine the flint and the lydite plot into one   
 	     facet_wrap(~Raw.material) 
-	     
-	
-	print(p)
 
 
 	#save to PDF
@@ -251,6 +234,13 @@ sessionInfo()
 ```
 
 RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
+
+
+# Cite R packages used
+```{r Citation}
+for (i in pack_to_load) print(citation(i), bibtex = FALSE)
+
+```
 
 
 ---

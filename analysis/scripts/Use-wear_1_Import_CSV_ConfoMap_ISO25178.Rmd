@@ -2,7 +2,13 @@
 title: "Import CSV from ConfoMap ISO25178 - use-wear archaeology & experiments"
 author: "Lisa Schunk"
 date: "`r Sys.time()`"
-output: word_document
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
 ---
 
 
@@ -18,7 +24,7 @@ knitr::opts_chunk$set(comment = NA, message = FALSE, indent = "", error = TRUE)
 This script formats the output resulting from applying a template computing ISO 25178 parameters in ConfoMap.
 The script will:
 
-1. Read in the original Rbin-files
+1. Read in the original Rbin-files (three files) 
 2. Format the data in order to make the three data sets fitting  
 3. Write an XLSX-file and save an R object ready for further analysis in R 
 
@@ -35,14 +41,10 @@ The knit directory for this script is the project directory.
 
 ---
 
-
 # Load packages
-```{r}
-library(openxlsx)
-library(tools)
-library(R.utils)
-library(chron)
-library(tidyverse)
+```{r Libraries}
+pack_to_load <- c("tools", "openxlsx", "R.utils", "chron", "tidyverse")
+sapply(pack_to_load, library, character.only = TRUE, logical.return = TRUE)
 
 ```
 
@@ -56,12 +58,6 @@ data_files <- list.files(dir_in, pattern = "\\.Rbin$", full.names = TRUE)
 md5_in <- md5sum(data_files)
 info_in <- data.frame(files = basename(names(md5_in)), checksum = md5_in, 
                   row.names = NULL)
-
-```
-
-The checksum (MD5 hashes) of the imported files are:  
-```{r, echo = FALSE}
-info_in
 
 ```
 
@@ -100,7 +96,7 @@ sublocation <- substr(TFE_imp["Location"][,1], 2, 2)
 TFE_imp$Location = location
 TFE_imp$Sublocation = sublocation
 
-# adds the name of the experiment as "site"
+# add the name of the experiment as "site"
 AvsN_imp[grep("LYDIT4-", AvsN_imp[["Sample"]]), "Site"] <- "aVSn"
 AvsN_imp[grep("FLT4-", AvsN_imp[["Sample"]]), "Site"] <- "aVSn"
 TFE_imp[grep("LYDIT5-", TFE_imp[["Sample"]]), "Site"] <- "TFE"
@@ -109,27 +105,27 @@ TFE_imp[grep("FLT8-", TFE_imp[["Sample"]]), "Site"] <- "TFE"
 AvsN_imp[["Site"]] <- factor(AvsN_imp[["Site"]])
 TFE_imp[["Site"]] <- factor(TFE_imp[["Site"]])
 
-# adds the tool type 
+# add the tool type 
 AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Tool.type"] <- "Standard sample"
 TFE_imp[grep("TFE", TFE_imp[["Site"]]), "Tool.type"] <- "Standard sample"
 
 AvsN_imp[["Tool.type"]] <- factor(AvsN_imp[["Tool.type"]])
 TFE_imp[["Tool.type"]] <- factor(TFE_imp[["Tool.type"]])
 
-# adds a column for "use-wear type" based on cycle
+# add a column for "use-wear type" based on cycle
 AvsN_imp$Usewear.type <- AvsN_imp$Cycle
 TFE_imp$Usewear.type <- TFE_imp$Cycle
 
-# adds the contact material 
+# add the contact material 
 Arch_imp[grep("lydite", Arch_imp[["Raw.material"]]), "Contact.material"] <- "unknown"
 Arch_imp[grep("flint", Arch_imp[["Raw.material"]]), "Contact.material"] <- "unknown"
 
-# adds the task 
+# add the task 
 Arch_imp[grep("lydite", Arch_imp[["Raw.material"]]), "Task"] <- "unknown"
 Arch_imp[grep("flint", Arch_imp[["Raw.material"]]), "Task"] <- "unknown"
 AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Task"] <- "cutting"
 
-# adds the edge angle 
+# add the edge angle 
 Arch_imp[grep("lydite", Arch_imp[["Raw.material"]]), "Edge.angle"] <- "unknown"
 Arch_imp[grep("flint", Arch_imp[["Raw.material"]]), "Edge.angle"] <- "unknown"
 AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Edge.angle"] <- "60°"
@@ -139,11 +135,11 @@ AvsN_imp[grep("aVSn", AvsN_imp[["Site"]]), "Edge.angle"] <- "60°"
 
 # Keeps only interesting columns and orders them  
 ```{r}
-# deletes non-important columns 
+# delete non-important columns 
 AvsN_imp$Cycle <- NULL
 TFE_imp$Cycle <- NULL
 
-# orders the columns in an identical way
+# order the columns in an identical way
 AvsN_imp <- AvsN_imp[c(1, 56:57, 6, 2, 55, 3:4, 58, 7, 59:60, 5, 8:54)]
 TFE_imp <- TFE_imp[c(1, 58:59, 6, 2, 57, 3:4, 60,7:9, 5, 10:56)]
 Arch_imp <- Arch_imp[c(1:9, 58:60, 10:57)]
@@ -154,7 +150,7 @@ Arch_imp <- Arch_imp[c(1:9, 58:60, 10:57)]
 # Merges the three datasets
 ```{r}
 # check pairwise if the three lines of headers are identical among the datasets
-# merges the data based on the three lines of headers while they get only 
+# merge the data based on the three lines of headers while they get only 
 # used in the first file 
 
 comp <- all(sapply(list(colnames(AvsN_imp), colnames(TFE_imp)), 
@@ -205,6 +201,12 @@ sessionInfo()
 
 RStudio version `r readLines("analysis/scripts/RStudioVersion.txt", n = 1)`.
 
+
+# Cite R packages used
+```{r Citation}
+for (i in pack_to_load) print(citation(i), bibtex = FALSE)
+
+```
 
 ---
 
